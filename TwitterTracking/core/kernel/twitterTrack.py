@@ -1,5 +1,6 @@
 from TwitterTracking.core.constants import CONS
 import tweepy
+import time
 from pymongo import MongoClient
 from TwitterTracking.core.kernel.tweepyListener import Listener
 from TwitterTracking.core.kernel.tweetProcessor import TweetProcessor
@@ -55,17 +56,28 @@ class TwitterTracker(object):
     def __runListener(self):
         auth = tweepy.OAuthHandler(C.CONSUMER_KEY, C.CONSUMER_SECRET)
         auth.set_access_token(C.ACCESS_TOKEN, C.ACCESS_TOKEN_SECRET)        
-        listener = Listener(self.q_tweet, self.timeout)
+        listener = Listener(self.q_tweet)
         stream = tweepy.Stream(auth, listener)
         self.status = INITIATED
+        start_time = time.time()
         try:
-            stream.filter(languages = ['en'], track=self.l_query)
+            stream.filter(languages = ['en'], track=self.l_query, async=True)
+
+            pass_time = time.time() - start_time
+            while(pass_time < self.timeout):
+                time.sleep(self.timeout - pass_time)
+                pass_time = time.time() - start_time
+                #print "SLEEPING" + str(pass_time)
+            
+            self.q_tweet.put(C.TOKEN_LAST_TWEET)
+            stream.disconnect()
             
         except Exception as e:
             s = str(e)
             self.status = ERROR
-        finally:
             stream.disconnect()
+        
+            
         
     def getStatus(self):
         return self.status

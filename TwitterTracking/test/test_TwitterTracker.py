@@ -8,7 +8,7 @@ fileName = 'partialData.txt'
 
 
 l_query = ['spain']
-timeout = 5
+timeout = 10
 
 tt = TwitterTracker(l_query, timeout, fileName)
 
